@@ -1,0 +1,207 @@
+name: init-tests_build_deploy_staging-mobile
+
+on:
+  repository_dispatch:
+    types: [deploy-to-init-project]
+  workflow_dispatch:
+
+jobs:
+  tests_build_deploy:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-15]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js to latest version LTS and setup cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies for project
+        run: npm install
+
+      - name: Lint TypeScript and ESLint for project
+        run: npm run lint:eslint && npm run lint:ts
+
+      - name: Run Unit Tests and E2E Tests
+        run: npm run test:unit:staging # && npm run test:e2e
+
+      - name: Setup Java JDK latest LTS - Android
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21.0.6'
+          distribution: 'oracle'
+          cache: 'gradle'
+
+      - name: Read current version from version.txt and append branch and commit hash - Android
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          # Check if VERSION_BASE is empty and set default value if necessary
+          if [ -f version.txt ]; then
+            VERSION_BASE=$(cat version.txt)
+          else
+            VERSION_BASE="1.0.0"
+          fi
+
+          # Get the current branch name
+          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+
+          # Convert branch name to lowercase and replace '/' with '-'
+          BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/\//-/g')
+
+          # Get the short commit SHA (first 7 characters)
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+
+          # Construct the new version string
+          FULL_VERSION="$VERSION_BASE-$BRANCH_NAME.$COMMIT_SHA"
+
+          echo "APP_VERSION=$FULL_VERSION" >> $GITHUB_ENV
+
+      - name: Set variables environment for versionCode and versionName - Android
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          # Génère le versionCode en divisant le timestamp UNIX par 100 pour avoir un nombre plus petit
+          # Ne doit pas dépasser 2100000000 (versionCode max pour Android)
+          # Cela signifie que vous pourriez techniquement produire un nouveau build toutes les 1 minute et 40 secondes 
+          # sans que deux builds consécutifs n'aient le même versionCode.
+          TIMESTAMP=$(date +%s)
+          VERSION_CODE=$(($TIMESTAMP / 100))
+          echo "ANDROID_VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV 
+          echo "ANDROID_VERSION_NAME=$APP_VERSION" >> $GITHUB_ENV
+
+      - name: Decode Keystore and create file .keystore for Sign APK/AAB after - Android
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
+
+      - name: Build with Capacitor, Generate AAB/APK and Sign - Android
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_ALIAS_NAME: ${{ secrets.ANDROID_KEYSTORE_ALIAS_NAME }}
+          ANDROID_KEYSTORE_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_KEY_PASSWORD }}
+        run: |
+          chmod +x android/gradlew
+          npm run mobile:build:android:staging -- \
+          --keystorepath android.keystore \
+          --keystorepass "$ANDROID_KEYSTORE_PASSWORD" \
+          --keystorealias "$ANDROID_KEYSTORE_ALIAS_NAME" \
+          --keystorealiaspass "$ANDROID_KEYSTORE_KEY_PASSWORD" \
+          --androidreleasetype AAB
+          npm run mobile:build:android:staging -- \
+          --keystorepath android.keystore \
+          --keystorepass "$ANDROID_KEYSTORE_PASSWORD" \
+          --keystorealias "$ANDROID_KEYSTORE_ALIAS_NAME" \
+          --keystorealiaspass "$ANDROID_KEYSTORE_KEY_PASSWORD" \
+          --androidreleasetype APK
+
+      - name: Install the Apple Certificate (Apple Distribution) - AppStore / TestFlight - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        env:
+          # Certificat Apple au format p12 encodé en base64
+          IOSMACOS_APPLE_CERTIFICATE_APPLEDISTRIBUTION_P12_BASE64: ${{ secrets.IOSMACOS_APPLE_CERTIFICATE_APPLEDISTRIBUTION_P12_BASE64 }}
+          # Mot de passe du certificat apple au format p12
+          IOSMACOS_APPLE_CERTIFICATE_APPLEDISTRIBUTION_P12_PASSWORD: ${{ secrets.IOSMACOS_APPLE_CERTIFICATE_APPLEDISTRIBUTION_P12_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$IOSMACOS_APPLE_CERTIFICATE_APPLEDISTRIBUTION_P12_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$IOSMACOS_APPLE_CERTIFICATE_APPLEDISTRIBUTION_P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$APPLE_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # apply provisioning profile
+          mkdir -p ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles
+
+      - name: Setup Xcode and Setup Command Line Tools - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        # https://github.com/actions/runner-images/blob/main/images/macos/macos-14-Readme.md
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.4.0'
+
+      - name: Determine SDK Path and set SDKROOT - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        run: |
+          SDKROOT=$(xcrun --sdk iphoneos --show-sdk-path)
+          echo "SDKROOT=$SDKROOT" >> $GITHUB_ENV
+
+      - name: Setup fastlane with brew - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        run: |
+          brew install fastlane
+
+      - name: Run fastlane to create a new app in App Store Connect and prepare for build - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APPSTORECONNECT_API_KEY_ID: ${{ secrets.APPLE_APPSTORECONNECT_API_KEY_ID }}
+          APPLE_APPSTORECONNECT_API_ISSUER_ID: ${{ secrets.APPLE_APPSTORECONNECT_API_ISSUER_ID }}
+          APPLE_APPSTORECONNECT_API_KEY_P8_BASE64: ${{ secrets.APPLE_APPSTORECONNECT_API_KEY_P8_BASE64 }}
+          APP_NAME: 'FlapiExampleApp'
+          IOS_APPLE_PROVISIONING_PROFILE_APPLEDISTRIBUTION_NAME: 'FlapiExampleApp'
+          APP_VERSION: '1.0.0'
+          APP_IOSMACOS_IDENTIFIER: 'com.example.flapiexampleapp'
+          FASTLANE_USERNAME: ${{ secrets.APPLE_ID }}
+          FASTLANE_SESSION: ${{ secrets.FASTLANE_SESSION }}
+          FASTLANE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+        run: fastlane create_new_app
+
+      - name: Build with Capacitor - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        run: npm run mobile:build:ios:staging && ls -la
+
+      - name: Verify if .app is signed - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        run: codesign --verify --deep --verify --verbose=4 path/to/*.app
+
+      - name: Create package .ipa for AppStore/TestFlight - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        run: |
+          # Create Payload directory and move .app into it
+          mkdir Payload
+          cp -a path/to/*.app Payload/
+
+          # Recuperer le nom du fichier .app pour avoir le même nom pour le .ipa, puis zip le Payload dans un .ipa
+          APP_NAME=$(basename Payload/*.app .app)
+          zip -ry $APP_NAME.ipa Payload/
+
+          # Move .ipa to build directory
+          mv $APP_NAME.ipa path/to/build/
+
+      - name: Verify if .ipa is valid with altool - iOS
+        if: ${{ matrix.platform == 'macos-15' }}
+        run: |
+          xcrun altool --validate-app --file path/to/*.ipa --type ios --username ${{ secrets.APPLE_ID }} --password ${{ secrets.APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+
+      - name: Upload Build Artifact
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: android/app/build/outputs/bundle/**/*.aab
+
+      - name: Upload iOS Archive
+        if: ${{ matrix.platform == 'macos-15' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-archive
+          path: ios/App.xcarchive

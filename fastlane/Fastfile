@@ -1,0 +1,221 @@
+# Documentation :
+# - produce : https://docs.fastlane.tools/actions/produce/
+# - sigh : https://docs.fastlane.tools/actions/sigh/
+# - deliver : https://docs.fastlane.tools/actions/deliver/
+# - pilot : https://docs.fastlane.tools/actions/pilot/
+# - App Store Connect API : https://docs.fastlane.tools/app-store-connect-api/
+
+# Utilisation (Créer une nouvelle application dans AppStoreConnect..etc) :
+# Run : fastlane create_new_app
+# Doit être exécuté depuis le répertoire racine du projet
+
+# Utilisation (Déployer l'application) :
+# TestFlight, run : fastlane submit_for_review to_testflight:true
+# AppStore, run : fastlane submit_for_review to_testflight:false ou fastlane submit_for_review
+# Doit être exécuté depuis le répertoire racine du projet
+
+# Lane pour créer une nouvelle application dans AppStoreConnect, et dans account developper pour le profil de provisionnement et bundle ID (org.flapi.xxx)
+lane :create_new_app do |options|
+  # Clé API App Store Connect
+  api_key = app_store_connect_api_key(
+    key_id: ENV["APPLE_APPSTORECONNECT_API_KEY_ID"],
+    issuer_id: ENV["APPLE_APPSTORECONNECT_API_ISSUER_ID"],
+    key_content: ENV["APPLE_APPSTORECONNECT_API_KEY_P8_BASE64"],
+    is_key_content_base64: true,
+    duration: 1200,
+    in_house: false
+  )
+
+  # Étape 1 : Créer l'identifiant d'application (Bundle ID)
+  produce(
+    username: ENV["APPLE_ID"],
+    team_id: ENV["APPLE_TEAM_ID"],
+    app_identifier: ENV["APP_IOSMACOS_IDENTIFIER"], # ex. : com.crzgames.testexe
+    app_name: ENV["APP_NAME"],
+    app_version: ENV["APP_VERSION"],
+    sku: Time.now.to_i.to_s, # SKU unique basé sur timestamp
+    language: "fr-FR",
+    platform: "ios",
+    skip_itc: false, # Créer sur App Store Connect
+    skip_devcenter: false, # Créer sur le portail développeur Apple
+    # Les services d'application peuvent être activés lors de la création de l'application :
+    enable_services: {
+      access_wifi: "off",                        # Valid values: "on", "off"
+      app_attest: "off",                         # Valid values: "on", "off"
+      app_group: "off",                          # Valid values: "on", "off"
+      apple_pay: "off",                          # Valid values: "on", "off"
+      associated_domains: "off",                 # Valid values: "on", "off"
+      auto_fill_credential: "off",               # Valid values: "on", "off"
+      car_play_audio_app: "off",                 # Valid values: "on", "off"
+      car_play_messaging_app: "off",             # Valid values: "on", "off"
+      car_play_navigation_app: "off",            # Valid values: "on", "off"
+      car_play_voip_calling_app: "off",          # Valid values: "on", "off"
+      class_kit: "off",                          # Valid values: "on", "off"
+      icloud: "off",                             # Valid values: "xcode5_compatible", "xcode6_compatible", "off"
+      critical_alerts: "off",                    # Valid values: "on", "off"
+      custom_network_protocol: "off",            # Valid values: "on", "off"
+      data_protection: "off",                    # Valid values: "complete", "unlessopen", "untilfirstauth", "off"
+      extended_virtual_address_space: "off",     # Valid values: "on", "off"
+      file_provider_testing_mode: "off",         # Valid values: "on", "off"
+      fonts: "off",                              # Valid values: "on", "off"
+      game_center: "off",                        # Valid values: "ios", "macos", off"
+      health_kit: "off",                         # Valid values: "on", "off"
+      hls_interstitial_preview: "off",           # Valid values: "on", "off"
+      home_kit: "off",                           # Valid values: "on", "off"
+      hotspot: "off",                            # Valid values: "on", "off"
+      hotspot_helper: "off",                     # Valid values: "on", "off"
+      in_app_purchase: "off",                    # Valid values: "on", "off"
+      inter_app_audio: "off",                    # Valid values: "on", "off"
+      low_latency_hls: "off",                    # Valid values: "on", "off"
+      managed_associated_domains: "off",         # Valid values: "on", "off"
+      maps: "off",                               # Valid values: "on", "off"
+      multipath: "off",                          # Valid values: "on", "off"
+      network_extension: "off",                  # Valid values: "on", "off"
+      nfc_tag_reading: "off",                    # Valid values: "on", "off"
+      personal_vpn: "off",                       # Valid values: "on", "off"
+      push_notification: "off",                  # Valid values: "on", "off"
+      sign_in_with_apple: "off",                 # Valid values: "on", "off"
+      siri_kit: "off",                           # Valid values: "on", "off"
+      system_extension: "off",                   # Valid values: "on", "off"
+      user_management: "off",                    # Valid values: "on", "off"
+      wallet: "off",                             # Valid values: "on", "off"
+      wireless_accessory: "off",                 # Valid values: "on", "off"
+      driver_kit: "off",                         # Valid values: "on", "off"
+      driver_kit_endpoint_security: "off",       # Valid values: "on", "off"
+      driver_kit_family_hid_device: "off",       # Valid values: "on", "off"
+      driver_kit_family_networking: "off",       # Valid values: "on", "off"
+      driver_kit_family_serial: "off",           # Valid values: "on", "off"
+      driver_kit_hid_event_service: "off",       # Valid values: "on", "off"
+      driver_kit_transport_hid: "off",           # Valid values: "on", "off"
+      multitasking_camera_access: "off",         # Valid values: "on", "off"
+      sf_universal_link_api: "off",              # Valid values: "on", "off"
+      vp9_decoder: "off",                        # Valid values: "on", "off"
+      music_kit: "off",                          # Valid values: "on", "off"
+      shazam_kit: "off",                         # Valid values: "on", "off"
+      communication_notifications: "off",        # Valid values: "on", "off"
+      group_activities: "off",                   # Valid values: "on", "off"
+      health_kit_estimate_recalibration: "off",  # Valid values: "on", "off"
+      time_sensitive_notifications: "off",       # Valid values: "on", "off"
+    }
+  )
+
+  # Récupérer l'Apple ID généré par produce
+  apple_id = lane_context[SharedValues::PRODUCE_APPLE_ID]
+  ENV['PRODUCE_APPLE_ID'] = apple_id.to_s # Stocker pour l'étape : deliver
+
+  # Étape 2 : Créer un profil de provisionnement liée au certificat existant dans la CI/CD GitHub Actions
+  sigh(
+    api_key: api_key,
+    username: ENV["APPLE_ID"],
+    team_id: ENV["APPLE_TEAM_ID"],
+    app_identifier: ENV["APP_IOSMACOS_IDENTIFIER"],
+    provisioning_name: ENV["IOS_APPLE_PROVISIONING_PROFILE_APPLEDISTRIBUTION_NAME"], # Nom du profil de provisionnement
+    output_path: "~/Library/Developer/Xcode/UserData/Provisioning\ Profiles", # Chemin de sortie pour le profil de provisionnement (*.mobileprovision) après la création
+    force: true, # Si vous souhaitez que le profil de provisionnement soit renouvelé quel que soit son état, utilisez cette --forceoption. Vous obtiendrez ainsi un profil avec une durée de vie maximale. --force Tous les appareils disponibles seront également ajoutés à ce profil.
+    skip_certificate_verification: false,
+    platform: "ios",
+    skip_install: false,
+    include_mac_in_profiles: true, # Inclure les appareils Apple Silicon Mac dans les profils de provisionnement pour les applications iOS/iPadOS
+    fail_on_name_taken: true, # Échouer si le nom du profil de provisionnement est déjà pris
+    skip_fetch_profiles: true, # Ignore la vérification des profils existants, ce qui est utile si vous avez des milliers de profils (vu qu'ont fait de la création de l'application)
+  )
+
+  # Étape 3 : Configurer les métadonnées initiales sur App Store Connect
+  deliver(
+    api_key: api_key,
+    team_id: ENV["APPLE_TEAM_ID"],
+    apple_id: ENV["PRODUCE_APPLE_ID"], # Utiliser l'Apple ID généré par produce plus haut
+    app_identifier: ENV["APP_IOSMACOS_IDENTIFIER"],
+    app_version: ENV["APP_VERSION"],
+    skip_binary_upload: true, # Ne pas télécharger de binaire pour l'instant
+    skip_screenshots: true, # Ne pas mettre à jour les captures d'écran
+    skip_metadata: false, # Ne pas ignorer la mise à jour des métadonnées
+    metadata_path: "./metadata", # Chemin vers le dossier contenant les métadonnées de l'application, relatif au fichier Fastfile
+    submit_for_review: false, # Ne pas soumettre pour révision immédiatement
+    platform: "ios",
+    force: true # Ignorer la vérification HTML
+  )
+end
+
+lane :submit_for_review do |options|
+  api_key = app_store_connect_api_key(
+    key_id: ENV["APPLE_APPSTORECONNECT_API_KEY_ID"],
+    issuer_id: ENV["APPLE_APPSTORECONNECT_API_ISSUER_ID"],
+    key_content: ENV["APPLE_APPSTORECONNECT_API_KEY_P8_BASE64"],
+    is_key_content_base64: true,
+    duration: 1200,
+    in_house: false
+  )
+
+  if options[:to_testflight]
+    # Soumettre une version pour examen pour les testeurs externes sur TestFlight
+    # Soumettre une version sans besoin de révision pour les testeurs internes sur TestFlight
+    # Pilot est une action Fastlane qui permet de gérer les versions de TestFlight
+    pilot(
+      api_key: api_key,                               # Clé API App Store Connect
+      team_id: ENV["APPLE_TEAM_ID"],                  # Identifiant de l'équipe
+      app_identifier: ENV["APP_IOSMACOS_IDENTIFIER"], # Identifier de l'application
+      skip_waiting_for_build_processing: false,       # Attendre la fin du traitement du build
+      distribute_external: true,                      # Distribuer à des testeurs externes
+      groups: ["beta", "qa"],                         # Noms des groupes externes et internes de testeurs
+      reject_build_waiting_for_review: true,          # Annule les builds en attente de révision (testeurs externes)
+      wait_processing_timeout_duration: 900,          # Durée d'attente maximale pour le traitement du build (15 minutes)
+      distribute_only: false,                         # Distribuer une build précédemment téléchargée
+      app_platform: "ios",                            # Plateforme de l'application
+      notify_external_testers: true,                  # Notifier les testeurs externes
+      changelog: "New beta version."                  # Description de la version (testeurs externes)
+    )
+  else
+    # Soumettre une version pour examen sur l'App Store
+    # Deliver est une action Fastlane qui permet de gérer les versions de l'App Store
+    deliver(
+      api_key: api_key,                               # Clé API App Store Connect
+      team_id: ENV["APPLE_TEAM_ID"],                  # Identifiant de l'équipe
+      app_identifier: ENV["APP_IOSMACOS_IDENTIFIER"], # Identifier de l'application
+      skip_metadata: true,                            # Ignorer la mise à jour des métadonnées
+      skip_screenshots: true,                         # Ignorer la mise à jour des captures d'écran
+      skip_app_version_update: true,                  # Ignorer la mise à jour de la version de l'application
+      submit_for_review: true,                        # Soumettre pour examen
+      automatic_release: true,                        # Publier automatiquement la version après l'approbation
+      platform: "ios",                                # Plateforme de l'application
+      reject_if_possible: true                        # Rejette la version précédemment soumise si elle est dans un état où cela est possible
+    )
+
+    # Mettre à jour la disponibilité pour macOS et Vision Pro
+    update_availability_for_macos_and_vision_pro(
+      enable_macos: false,
+      enable_vision_pro: false
+    )
+  end
+end
+
+private_lane :update_availability_for_macos_and_vision_pro do |options|
+  require 'spaceship'
+
+  # Extraction des options
+  enable_macos = options[:enable_macos] || false
+  enable_vision_pro = options[:enable_vision_pro] || false
+
+  # Connexion à App Store Connect
+  Spaceship::ConnectAPI.token = app_store_connect_api_key(
+    key_id: ENV["APPLE_APPSTORECONNECT_API_KEY_ID"],
+    issuer_id: ENV["APPLE_APPSTORECONNECT_API_ISSUER_ID"],
+    key_content: ENV["APPLE_APPSTORECONNECT_API_KEY_P8_BASE64"],
+    is_key_content_base64: true
+  )
+
+  # Recherche de l'application
+  app = Spaceship::ConnectAPI::App.find(ENV["APP_IOSMACOS_IDENTIFIER"])
+
+  # Mise à jour de la disponibilité pour les Mac avec puces Apple M1+ et Vision Pro OS
+  if app
+    app.update(
+      available_on_macos: enable_macos,
+      available_on_vision_pro: enable_vision_pro
+    )
+    UI.success("Disponibilité mise à jour : macOS (#{enable_macos}), Vision Pro OS (#{enable_vision_pro})")
+  # 
+  else
+    UI.error("Application introuvable : #{ENV["APP_IOSMACOS_IDENTIFIER"]}")
+  end
+end

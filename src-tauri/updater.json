@@ -1,0 +1,34 @@
+{
+  "version": "0.0.0",
+  "notes": "ExampleNotesApp",
+  "platforms": {
+    "darwin-universal": {
+      "signature": "Content of myapp.app.tar.gz.sig",
+      "url": "https://api.crzcommon.com/download/ExampleNameApp_x86_64-arm64.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "Content of myapp.app.tar.gz.sig",
+      "url": "https://api.flapi.org/download/ExampleNameApp_x86_64.app.tar.gz"
+    },
+    "darwin-aarch64": {
+      "signature": "Content of myapp.app.tar.gz.sig",
+      "url": "https://example.api.flapi.org/download/ExampleNameApp_arm64.app.tar.gz"
+    },
+    "linux-x86_64": {
+      "signature": "Content of myapp.AppImage.sig",
+      "url": "https://example.api.flapi.org/download/ExampleNameApp_x86_64.AppImage.tar.gz"
+    },
+    "linux-aarch64": {
+      "signature": "Content of myapp.AppImage.sig",
+      "url": "https://example.api.flapi.org/download/ExampleNameApp_arm64.AppImage.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "Content of myapp.msi.sig",
+      "url": "https://example.api.flapi.org/download/ExampleNameApp_x64.msi.zip"
+    },
+    "windows-aarch64": {
+      "signature": "Content of myapp.msi.sig",
+      "url": "https://example.api.flapi.org/download/ExampleNameApp_arm64.msi.zip"
+    }
+  }
+}

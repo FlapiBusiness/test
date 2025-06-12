@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-customerName-projectName-frontend-deployment
+  namespace: dev-customerName-projectName-frontend
+  labels:
+    app: dev-customerName-projectName-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dev-customerName-projectName-frontend
+  template:
+    metadata:
+      labels:
+        app: dev-customerName-projectName-frontend
+    spec:
+      containers:
+        - name: dev-customerName-projectName-frontend
+          image: corentin35/customerName-projectName-frontend:develop-${TAG_VERSION}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: '400m'
+              memory: '512Mi'
+            limits:
+              cpu: '800m'
+              memory: '1Gi'
+      imagePullSecrets:
+        - name: regcred

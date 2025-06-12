@@ -1,0 +1,20 @@
+{
+  // https://nuxt.com/docs/guide/concepts/typescript
+  "extends": "./.nuxt/tsconfig.json",
+  "include": [
+    "tests/**/*",
+    "src-core/**/*",
+    "src-nuxt/**/*",
+    "src-tauri/scripts/**/*",
+    ".nuxt/**/*",
+    "cypress/support/**/*",
+    "vitest.config.ts",
+    "tailwind.config.ts",
+    "nuxt.config.ts",
+    "cypress.config.ts",
+    "capacitor.config.ts",
+    "app.config.ts",
+    "app.vue"
+  ],
+  "exclude": ["dist", "node_modules"]
+}

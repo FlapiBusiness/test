@@ -1,0 +1,126 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ExampleNameApp",
+  "mainBinaryName": "example-name-app",
+  "version": "0.0.0",
+  "identifier": "com.flapi.examplenameapp",
+  "build": {
+    "frontendDist": "../.output/public/",
+    "devUrl": "http://localhost:1460",
+    "beforeDevCommand": "tsx src-tauri/scripts/beforeDevCommand.ts",
+    "beforeBuildCommand": "tsx src-tauri/scripts/beforeBuildCommand.ts"
+  },
+  "app": {
+    "windows": [
+      {
+        "fullscreen": false,
+        "width": 600,
+        "height": 800,
+        "resizable": false,
+        "title": "ExampleNameApp",
+        "decorations": false,
+        "center": true,
+        "alwaysOnTop": false,
+        "visible": true,
+        "url": "/",
+        "label": "main"
+      }
+    ],
+    "macOSPrivateApi": true,
+    "security": {
+      "csp": "default-src 'self'; connect-src http://127.0.0.1:3333/ https://dev.example.api.flapi.org https://staging.example.api.flapi.org https://example.api.flapi.org http://ipc.localhost;",
+      "devCsp": "",
+      "assetProtocol": {
+        "enable": false,
+        "scope": []
+      },
+      "capabilities": [],
+      "dangerousDisableAssetCspModification": false,
+      "freezePrototype": false,
+      "headers": {},
+      "pattern": {
+        "use": "brownfield"
+      }
+    }
+  },
+  "bundle": {
+    "createUpdaterArtifacts": true,
+    "active": true,
+    "category": "Business",
+    "copyright": "Flapi",
+    "longDescription": "ExampleLongDescriptionApp",
+    "shortDescription": "ExampleShortDescriptionApp",
+    "license": "Proprietary",
+    "licenseFile": "path/to/license.txt",
+    "targets": "all",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "publisher": "Flapi",
+    "resources": [],
+    "externalBin": [],
+    "fileAssociations": [],
+    "homepage": "https://example.flapi.org",
+    "useLocalToolsDir": false,
+    "android": {
+      "minSdkVersion": 24,
+      "versionCode": 1001000
+    },
+    "iOS": {
+      "developmentTeam": "ABCDE12345",
+      "frameworks": [],
+      "minimumSystemVersion": "13.0",
+      "template": null
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true,
+        "files": {}
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "files": {},
+      "hardenedRuntime": true,
+      "entitlements": null,
+      "exceptionDomain": "127.0.0.1 localhost dev.example.api.flapi.org staging.example.api.flapi.org example.api.flapi.org",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null,
+      "dmg": {
+        "appPosition": {
+          "x": 180,
+          "y": 170
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 170
+        },
+        "windowSize": {
+          "height": 400,
+          "width": 660
+        },
+        "background": "dmg/background.png"
+      }
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "silent": true,
+        "type": "offlineInstaller"
+      },
+      "allowDowngrades": false,
+      "signCommand": "scripts\\windowsSign.bat %1",
+      "nsis": null,
+      "wix": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "windows": {
+        "installMode": "passive"
+      },
+      "active": true,
+      "endpoints": ["https://example.api.flapi.org/updater/updater-manifest/{{target}}/{{arch}}/{{current_version}}"],
+      "dialog": false,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE5NjU0QjdDQTI1Njk4MDYKUldRR21GYWlmRXRsR2Faekh4WGJSeVR4czJkTFZFSzI0enVtaGxxc2dNWm9yZG1nN0ZIU2Q3NXQK"
+    }
+  }
+}

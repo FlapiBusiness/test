@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prod-customerName-projectName-frontend-ingress
+  namespace: prod-customerName-projectName-frontend
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - example.flapi.org
+      secretName: prod-customerName-projectName-frontend-tls
+  rules:
+    - host: example.flapi.org
+      http:
+        paths:
+          - pathType: Prefix
+            path: '/'
+            backend:
+              service:
+                name: prod-customerName-projectName-frontend-service
+                port:
+                  number: 3000

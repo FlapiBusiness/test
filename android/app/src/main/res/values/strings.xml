@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">examplenameapp</string>
+    <string name="title_activity_main">examplenameapp</string>
+    <string name="package_name">org.flapi.examplenameapp</string>
+    <string name="custom_url_scheme">org.flapi.examplenameapp</string>
+</resources>
